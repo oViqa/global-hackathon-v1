@@ -1,7 +1,10 @@
-import { PrismaClient } from '@prisma/client';
+import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
-
-const prisma = new PrismaClient();
+import { connectDatabase } from './config/database';
+import { User } from './models/User';
+import { Event, EventStatus } from './models/Event';
+import { Attendance, AttendanceStatus } from './models/Attendance';
+import { Message } from './models/Message';
 
 const germanCities = [
   { city: 'Berlin', state: 'Berlin', lat: 52.520008, lng: 13.404954 },
@@ -37,18 +40,22 @@ const descriptions = [
   'Let\'s celebrate the pudding culture together!',
 ];
 
-async function main() {
+async function seed() {
   console.log('🌱 Seeding database...');
+
+  // Clear existing data
+  await User.deleteMany({});
+  await Event.deleteMany({});
+  await Attendance.deleteMany({});
+  await Message.deleteMany({});
 
   // Create test users
   const users = [];
   for (let i = 1; i <= 5; i++) {
-    const user = await prisma.user.create({
-      data: {
-        email: `user${i}@puddingmeetup.com`,
-        passwordHash: await bcrypt.hash('password123', 10),
-        name: `Test User ${i}`,
-      },
+    const user = await User.create({
+      email: `user${i}@puddingmeetup.com`,
+      passwordHash: await bcrypt.hash('password123', 10),
+      name: `Test User ${i}`,
     });
     users.push(user);
     console.log(`✅ Created user: ${user.name}`);
@@ -61,34 +68,32 @@ async function main() {
     const startTime = new Date(now.getTime() + (i + 1) * 24 * 60 * 60 * 1000 + Math.random() * 48 * 60 * 60 * 1000);
     const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000);
 
-    const event = await prisma.event.create({
-      data: {
-        title: eventTitles[i],
-        description: descriptions[i % descriptions.length],
-        locationLat: city.lat,
-        locationLng: city.lng,
-        city: city.city,
-        state: city.state,
-        startTime,
-        endTime,
-        attendeeLimit: 10 + Math.floor(Math.random() * 20),
-        organizerId: users[i % users.length].id,
+    const event = await Event.create({
+      title: eventTitles[i],
+      description: descriptions[i % descriptions.length],
+      location: {
+        type: 'Point',
+        coordinates: [city.lng, city.lat]
       },
+      city: city.city,
+      state: city.state,
+      startTime,
+      endTime,
+      attendeeLimit: 10 + Math.floor(Math.random() * 20),
+      organizerId: users[i % users.length]._id,
     });
 
     // Add some attendances
     const numAttendees = Math.floor(Math.random() * 5) + 2;
     for (let j = 0; j < numAttendees; j++) {
       const attendeeUser = users[(i + j + 1) % users.length];
-      await prisma.attendance.create({
-        data: {
-          userId: attendeeUser.id,
-          eventId: event.id,
-          status: j < numAttendees - 1 ? 'APPROVED' : 'PENDING',
-          puddingPhoto: '/uploads/placeholder-pudding.jpg',
-          puddingName: ['Vanilla', 'Chocolate', 'Strawberry', 'Caramel', 'Banana'][j % 5] + ' Pudding',
-          puddingDesc: 'Homemade with love!',
-        },
+      await Attendance.create({
+        userId: attendeeUser._id,
+        eventId: event._id,
+        status: j < numAttendees - 1 ? AttendanceStatus.APPROVED : AttendanceStatus.PENDING,
+        puddingPhoto: '/uploads/placeholder-pudding.jpg',
+        puddingName: ['Vanilla', 'Chocolate', 'Strawberry', 'Caramel', 'Banana'][j % 5] + ' Pudding',
+        puddingDesc: 'Homemade with love!',
       });
     }
 
@@ -96,18 +101,16 @@ async function main() {
     if (numAttendees > 1) {
       for (let k = 0; k < 3; k++) {
         const messageUser = users[(i + k) % users.length];
-        await prisma.message.create({
-          data: {
-            userId: messageUser.id,
-            eventId: event.id,
-            content: [
-              'Can\'t wait for this event!',
-              'I\'m bringing my special pudding recipe!',
-              'This is going to be amazing!',
-              'Looking forward to meeting everyone!',
-              'Does anyone have dietary restrictions?',
-            ][k % 5],
-          },
+        await Message.create({
+          userId: messageUser._id,
+          eventId: event._id,
+          content: [
+            'Can\'t wait for this event!',
+            'I\'m bringing my special pudding recipe!',
+            'This is going to be amazing!',
+            'Looking forward to meeting everyone!',
+            'Does anyone have dietary restrictions?',
+          ][k % 5],
         });
       }
     }
@@ -118,11 +121,13 @@ async function main() {
   console.log('🎉 Seeding completed!');
 }
 
-main()
+connectDatabase()
+  .then(() => seed())
+  .then(() => {
+    console.log('Closing database connection...');
+    mongoose.connection.close();
+  })
   .catch((e) => {
     console.error('❌ Error seeding database:', e);
     process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
   });

@@ -1,10 +1,11 @@
 import express from 'express';
 import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
+import { Event } from '../models/Event';
+import { Attendance, AttendanceStatus } from '../models/Attendance';
+import { Message } from '../models/Message';
 import { authenticate, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 const createMessageSchema = z.object({
   content: z.string().min(1).max(500),
@@ -16,51 +17,33 @@ router.get('/events/:eventId/messages', authenticate, async (req: AuthRequest, r
     const { eventId } = req.params;
     const { limit = '50', before } = req.query;
 
-    // Check if user is approved attendee or organizer
-    const event = await prisma.event.findUnique({
-      where: { id: eventId }
-    });
-
+    const event = await Event.findById(eventId);
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    const isOrganizer = event.organizerId === req.userId;
-    
+    const isOrganizer = event.organizerId.toString() === req.userId;
+
     if (!isOrganizer) {
-      const attendance = await prisma.attendance.findUnique({
-        where: {
-          userId_eventId: {
-            userId: req.userId!,
-            eventId
-          }
-        }
+      const attendance = await Attendance.findOne({
+        userId: req.userId!,
+        eventId
       });
 
-      if (!attendance || attendance.status !== 'APPROVED') {
+      if (!attendance || attendance.status !== AttendanceStatus.APPROVED) {
         return res.status(403).json({ error: 'Not authorized to view messages' });
       }
     }
 
-    const messages = await prisma.message.findMany({
-      where: {
-        eventId,
-        ...(before && {
-          id: { lt: before as string }
-        })
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' },
-      take: parseInt(limit as string)
-    });
+    const query: any = { eventId };
+    if (before) {
+      query._id = { $lt: before };
+    }
+
+    const messages = await Message.find(query)
+      .populate('userId', 'name avatarUrl')
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit as string));
 
     res.json({
       messages: messages.reverse(),
@@ -76,51 +59,35 @@ router.post('/events/:eventId/messages', authenticate, async (req: AuthRequest, 
     const { eventId } = req.params;
     const data = createMessageSchema.parse(req.body);
 
-    // Check if user is approved attendee or organizer
-    const event = await prisma.event.findUnique({
-      where: { id: eventId }
-    });
-
+    const event = await Event.findById(eventId);
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    const isOrganizer = event.organizerId === req.userId;
-    
+    const isOrganizer = event.organizerId.toString() === req.userId;
+
     if (!isOrganizer) {
-      const attendance = await prisma.attendance.findUnique({
-        where: {
-          userId_eventId: {
-            userId: req.userId!,
-            eventId
-          }
-        }
+      const attendance = await Attendance.findOne({
+        userId: req.userId!,
+        eventId
       });
 
-      if (!attendance || attendance.status !== 'APPROVED') {
+      if (!attendance || attendance.status !== AttendanceStatus.APPROVED) {
         return res.status(403).json({ error: 'Not authorized to send messages' });
       }
     }
 
-    const message = await prisma.message.create({
-      data: {
-        content: data.content,
-        imageUrl: data.imageUrl,
-        userId: req.userId!,
-        eventId
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true
-          }
-        }
-      }
+    const message = await Message.create({
+      content: data.content,
+      imageUrl: data.imageUrl,
+      userId: req.userId!,
+      eventId
     });
 
-    res.status(201).json({ message });
+    const populatedMessage = await Message.findById(message._id)
+      .populate('userId', 'name avatarUrl');
+
+    res.status(201).json({ message: populatedMessage });
   } catch (error) {
     next(error);
   }

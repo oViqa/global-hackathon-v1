@@ -7,21 +7,17 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio",
     "seed": "tsx src/seed.ts"
   },
   "keywords": ["pudding", "meetup", "events"],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@prisma/client": "^5.7.0",
     "express": "^4.18.2",
     "cors": "^2.8.5",
     "bcrypt": "^5.1.1",
     "jsonwebtoken": "^9.0.2",
-    "socket.io": "^4.6.1",
+    "mongoose": "^8.0.3",
     "multer": "^1.4.5-lts.1",
     "zod": "^3.22.4",
     "dotenv": "^16.3.1",
@@ -37,7 +33,6 @@
     "@types/multer": "^1.4.11",
     "@types/node": "^20.10.6",
     "@types/compression": "^1.7.5",
-    "prisma": "^5.7.0",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   }

@@ -1,11 +1,11 @@
 import express from 'express';
 import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
+import { Event, EventStatus } from '../models/Event';
+import { Attendance, AttendanceStatus } from '../models/Attendance';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { calculateDistance, isInGermany } from '../utils/geo';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 const createEventSchema = z.object({
   title: z.string().min(3).max(100),
@@ -32,83 +32,79 @@ router.get('/', async (req, res, next) => {
       limit = '50'
     } = req.query;
 
-    const events = await prisma.event.findMany({
-      where: {
-        status: status as any
-      },
-      include: {
-        organizer: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true
-          }
-        },
-        attendances: {
-          where: { status: 'APPROVED' },
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true
-              }
-            }
-          }
+    const query: any = {
+      status: status as EventStatus
+    };
+
+    // If location provided, filter by radius
+    if (lat && lng) {
+      const userLat = parseFloat(lat as string);
+      const userLng = parseFloat(lng as string);
+      const maxRadius = parseInt(radius as string);
+
+      query.location = {
+        $near: {
+          $geometry: {
+            type: 'Point',
+            coordinates: [userLng, userLat]
+          },
+          $maxDistance: maxRadius
         }
-      },
-      orderBy: {
-        startTime: 'asc'
-      },
-      take: parseInt(limit as string)
-    });
-
-    const userLat = lat ? parseFloat(lat as string) : null;
-    const userLng = lng ? parseFloat(lng as string) : null;
-    const maxRadius = parseInt(radius as string);
-
-    const eventsWithDistance = events.map(event => {
-      let distance = null;
-      if (userLat && userLng) {
-        distance = calculateDistance(
-          userLat,
-          userLng,
-          event.locationLat,
-          event.locationLng
-        );
-      }
-
-      const puddingPreviews = event.attendances
-        .slice(0, 5)
-        .map(a => a.puddingPhoto);
-
-      return {
-        id: event.id,
-        title: event.title,
-        description: event.description,
-        location: {
-          lat: event.locationLat,
-          lng: event.locationLng
-        },
-        city: event.city,
-        state: event.state,
-        startTime: event.startTime,
-        endTime: event.endTime,
-        attendeeLimit: event.attendeeLimit,
-        attendeeCount: event.attendances.length,
-        status: event.status,
-        organizer: event.organizer,
-        puddingPreviews,
-        distance
       };
-    });
+    }
 
-    const filteredEvents = userLat && userLng
-      ? eventsWithDistance.filter(e => e.distance === null || e.distance <= maxRadius)
-      : eventsWithDistance;
+    const events = await Event.find(query)
+      .populate('organizerId', 'name avatarUrl')
+      .limit(parseInt(limit as string))
+      .sort({ startTime: 1 });
+
+    // Get attendance info for each event
+    const eventsWithAttendance = await Promise.all(
+      events.map(async (event) => {
+        const attendances = await Attendance.find({
+          eventId: event._id,
+          status: AttendanceStatus.APPROVED
+        }).select('puddingPhoto');
+
+        const puddingPreviews = attendances.slice(0, 5).map(a => a.puddingPhoto);
+
+        let distance = null;
+        if (lat && lng) {
+          const userLat = parseFloat(lat as string);
+          const userLng = parseFloat(lng as string);
+          distance = calculateDistance(
+            userLat,
+            userLng,
+            event.location.coordinates[1],
+            event.location.coordinates[0]
+          );
+        }
+
+        return {
+          id: event._id,
+          title: event.title,
+          description: event.description,
+          location: {
+            lat: event.location.coordinates[1],
+            lng: event.location.coordinates[0]
+          },
+          city: event.city,
+          state: event.state,
+          startTime: event.startTime,
+          endTime: event.endTime,
+          attendeeLimit: event.attendeeLimit,
+          attendeeCount: attendances.length,
+          status: event.status,
+          organizer: event.organizerId,
+          puddingPreviews,
+          distance
+        };
+      })
+    );
 
     res.json({
-      events: filteredEvents,
-      total: filteredEvents.length
+      events: eventsWithAttendance,
+      total: eventsWithAttendance.length
     });
   } catch (error) {
     next(error);
@@ -120,51 +116,28 @@ router.get('/:id', async (req, res, next) => {
     const { id } = req.params;
     const userId = (req as AuthRequest).userId;
 
-    const event = await prisma.event.findUnique({
-      where: { id },
-      include: {
-        organizer: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true
-          }
-        },
-        attendances: {
-          where: { status: 'APPROVED' },
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                avatarUrl: true
-              }
-            }
-          }
-        }
-      }
-    });
-
+    const event = await Event.findById(id).populate('organizerId', 'name avatarUrl');
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
 
+    const attendances = await Attendance.find({
+      eventId: id,
+      status: AttendanceStatus.APPROVED
+    }).populate('userId', 'name avatarUrl');
+
     let userAttendance = null;
     if (userId) {
-      userAttendance = await prisma.attendance.findUnique({
-        where: {
-          userId_eventId: {
-            userId,
-            eventId: id
-          }
-        }
+      userAttendance = await Attendance.findOne({
+        userId,
+        eventId: id
       });
     }
 
-    const attendees = event.attendances.map(a => ({
-      id: a.user.id,
-      name: a.user.name,
-      avatarUrl: a.user.avatarUrl,
+    const attendees = attendances.map(a => ({
+      id: (a.userId as any)._id,
+      name: (a.userId as any).name,
+      avatarUrl: (a.userId as any).avatarUrl,
       puddingPhoto: a.puddingPhoto,
       puddingName: a.puddingName,
       status: a.status
@@ -172,12 +145,12 @@ router.get('/:id', async (req, res, next) => {
 
     res.json({
       event: {
-        id: event.id,
+        id: event._id,
         title: event.title,
         description: event.description,
         location: {
-          lat: event.locationLat,
-          lng: event.locationLng
+          lat: event.location.coordinates[1],
+          lng: event.location.coordinates[0]
         },
         city: event.city,
         state: event.state,
@@ -186,7 +159,7 @@ router.get('/:id', async (req, res, next) => {
         endTime: event.endTime,
         attendeeLimit: event.attendeeLimit,
         status: event.status,
-        organizer: event.organizer,
+        organizer: event.organizerId,
         attendees,
         userAttendance
       }
@@ -220,32 +193,25 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
       });
     }
 
-    const event = await prisma.event.create({
-      data: {
-        title: data.title,
-        description: data.description,
-        locationLat: data.location.lat,
-        locationLng: data.location.lng,
-        city: data.city,
-        state: data.state,
-        address: data.address,
-        startTime,
-        endTime,
-        attendeeLimit: data.attendeeLimit,
-        organizerId: req.userId!
+    const event = await Event.create({
+      title: data.title,
+      description: data.description,
+      location: {
+        type: 'Point',
+        coordinates: [data.location.lng, data.location.lat]
       },
-      include: {
-        organizer: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true
-          }
-        }
-      }
+      city: data.city,
+      state: data.state,
+      address: data.address,
+      startTime,
+      endTime,
+      attendeeLimit: data.attendeeLimit,
+      organizerId: req.userId!
     });
 
-    res.status(201).json({ event });
+    const populatedEvent = await Event.findById(event._id).populate('organizerId', 'name avatarUrl');
+
+    res.status(201).json({ event: populatedEvent });
   } catch (error) {
     next(error);
   }
@@ -255,31 +221,20 @@ router.patch('/:id', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
 
-    const event = await prisma.event.findUnique({
-      where: { id }
-    });
-
+    const event = await Event.findById(id);
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    if (event.organizerId !== req.userId) {
+    if (event.organizerId.toString() !== req.userId) {
       return res.status(403).json({ error: 'Only organizer can edit event' });
     }
 
-    const updatedEvent = await prisma.event.update({
-      where: { id },
-      data: req.body,
-      include: {
-        organizer: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true
-          }
-        }
-      }
-    });
+    const updatedEvent = await Event.findByIdAndUpdate(
+      id,
+      { $set: req.body, updatedAt: new Date() },
+      { new: true }
+    ).populate('organizerId', 'name avatarUrl');
 
     res.json({ event: updatedEvent });
   } catch (error) {
@@ -291,21 +246,18 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
 
-    const event = await prisma.event.findUnique({
-      where: { id }
-    });
-
+    const event = await Event.findById(id);
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    if (event.organizerId !== req.userId) {
+    if (event.organizerId.toString() !== req.userId) {
       return res.status(403).json({ error: 'Only organizer can delete event' });
     }
 
-    await prisma.event.update({
-      where: { id },
-      data: { status: 'CANCELLED' }
+    await Event.findByIdAndUpdate(id, {
+      status: EventStatus.CANCELLED,
+      updatedAt: new Date()
     });
 
     res.json({ message: 'Event cancelled successfully' });
