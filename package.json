@@ -1,23 +1,30 @@
 {
-  "name": "acta-hackathon-starter",
+  "name": "pudding-gabel-meetup",
   "version": "1.0.0",
-  "description": "ACTA 24-hour Global Hackathon starter repository",
+  "description": "Pudding Gabel Meetup Platform - ACTA 24-hour Global Hackathon",
   "main": "index.js",
   "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "seed": "cd backend && npm run seed",
     "verify": "node verify-submission.js",
-    "start": "echo 'Add your start command here!'",
-    "test": "echo 'Add your test command here!'"
+    "start": "echo 'Run npm run dev:backend and npm run dev:frontend in separate terminals'"
   },
   "keywords": [
     "hackathon",
     "acta",
-    "starter"
+    "pudding",
+    "meetup",
+    "social",
+    "location-based"
   ],
-  "author": "ACTA Studios",
+  "author": "ACTA Hackathon Participant",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/actastudios/global-hackathon-v1"
   }
 }
-
