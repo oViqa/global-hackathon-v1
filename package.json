@@ -1,0 +1,43 @@
+{
+  "name": "pmitg-monorepo",
+  "version": "1.0.0",
+  "description": "PmitG - Pudding mit Gabel Meetup Platform Monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run dev --workspace=@pmitg/backend",
+    "dev:frontend": "npm run dev --workspace=@pmitg/frontend",
+    "build": "npm run build --workspaces",
+    "build:backend": "npm run build --workspace=@pmitg/backend",
+    "build:frontend": "npm run build --workspace=@pmitg/frontend",
+    "install:all": "npm install && npm install --workspaces",
+    "clean": "npm run clean --workspaces",
+    "lint": "npm run lint --workspaces",
+    "type-check": "npm run type-check --workspaces"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/pmitg-monorepo.git"
+  },
+  "keywords": [
+    "pudding",
+    "meetup",
+    "social",
+    "location-based",
+    "monorepo"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
