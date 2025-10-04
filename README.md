@@ -1,4 +1,4 @@
-# 🍮 Pudding Gabel Meetup Platform
+# 🍮 Pudding Mit Gabel Meetup Platform
 
 **Find your pudding people** - A location-based social platform for organizing and discovering "Pudding mit Gabel" (pudding with fork) meetup events across Germany.
 
@@ -8,7 +8,7 @@
 
 ## 🎯 Project Overview
 
-Pudding Gabel is a unique social platform that combines:
+Pudding Mit Gabel is a unique social platform that combines:
 - 🗺️ **Interactive map** of Germany showing pudding meetup events
 - 📸 **Photo-first approach** - Users must upload a pudding photo to join
 - ✅ **Organizer approval system** for quality control
@@ -25,7 +25,6 @@ Built for the **ACTA 24-Hour Global Hackathon** (Oct 4-5, 2025).
 - ✅ Event creation with geolocation
 - ✅ Join events with pudding photo upload
 - ✅ Organizer approval workflow
-- ✅ Real-time chat (Socket.io)
 - ✅ Event discovery with radius filtering
 - ✅ Responsive design (mobile-first)
 
@@ -34,26 +33,19 @@ Built for the **ACTA 24-Hour Global Hackathon** (Oct 4-5, 2025).
 **Frontend:**
 - Next.js 14 (App Router)
 - TypeScript
-- TailwindCSS + shadcn/ui
+- TailwindCSS 
 - Leaflet.js for maps
-- Socket.io-client
 - Zustand (state management)
-- Axios
 
 **Backend:**
 - Node.js + Express
 - TypeScript
-- PostgreSQL + Prisma ORM
-- Socket.io
-- JWT authentication
-- Multer (file uploads)
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
 - Node.js 20+ and npm
-- PostgreSQL 15+
 - Git
 
 ### Installation
@@ -192,37 +184,6 @@ Use these test accounts (created by seed script):
 │   └── package.json
 │
 └── README.md
-```
-
-## 🔧 Environment Variables
-
-### Backend (.env)
-```env
-DATABASE_URL="postgresql://user:password@localhost:5432/puddingmeetup"
-JWT_SECRET="your-secret-key"
-PORT=3001
-FRONTEND_URL=http://localhost:3000
-```
-
-### Frontend (.env.local)
-```env
-NEXT_PUBLIC_API_URL=http://localhost:3001
-NEXT_PUBLIC_WS_URL=ws://localhost:3001
-```
-
-## 🧪 Testing
-
-Currently, the project includes:
-- ✅ 10 demo events across German cities
-- ✅ 5 test user accounts
-- ✅ Sample attendances and messages
-- ✅ Real-time chat functionality
-
-To reset demo data:
-```bash
-cd backend
-npx prisma migrate reset
-npm run seed
 ```
 
 ## 🚀 Deployment
