@@ -150,6 +150,7 @@ export default function JoinEventModal({ isOpen, onClose, event, onSubmit }: Joi
                   type="file"
                   id="pudding-photo"
                   accept="image/*"
+                  capture="environment"
                   onChange={handleFileChange}
                   className="hidden"
                 />

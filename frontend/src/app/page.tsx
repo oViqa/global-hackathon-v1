@@ -46,45 +46,9 @@ export default function Home() {
 
   return (
       <main className="relative w-full h-screen overflow-hidden">
-        {/* Header */}
-        <div className="absolute top-0 left-0 right-0 z-[1000] bg-white/95 backdrop-blur-sm shadow-md">
-          <div className="container mx-auto px-4 py-3 flex items-center justify-end gap-2">
-            {user ? (
-              <>
-                <Button 
-                  onClick={handleCreateEvent}
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="hidden sm:inline">Create Event</span>
-                </Button>
-                <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-                  <User className="w-4 h-4" />
-                  <span className="hidden sm:inline">{user.name}</span>
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button 
-                  onClick={handleCreateEvent}
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="hidden sm:inline">Create Event</span>
-                </Button>
-                <Button onClick={() => setShowLogin(true)} size="sm">
-                  Login
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Map */}
-        <div className="w-full h-full pt-16">
-          <MapView />
+        {/* Map - Full screen, no header */}
+        <div className="w-full h-full">
+          <MapView onCreateEvent={handleCreateEvent} onLogin={() => setShowLogin(true)} user={user} />
         </div>
 
         {/* Dialogs */}
