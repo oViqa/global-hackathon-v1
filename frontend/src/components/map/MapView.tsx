@@ -6,6 +6,8 @@ import { MapPin, Users, Clock, Calendar, Plus, Filter, List, Map as MapIcon, Use
 import CreateEventModal from '../events/CreateEventModal';
 import JoinEventModal from '../events/JoinEventModal';
 import EventChat from '../chat/EventChat';
+import { eventsAPI } from '@/lib/api';
+import { useToast } from '@/components/ui/use-toast';
 
 // Dynamically import Leaflet components to avoid SSR issues
 const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), {
@@ -43,6 +45,7 @@ interface Event {
 export default function MapView() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [radius, setRadius] = useState(50); // km
@@ -60,73 +63,80 @@ export default function MapView() {
   const defaultZoom = 6;
 
   useEffect(() => {
-    // Mock data for now - will be replaced with API call
-    const mockEvents: Event[] = [
-      {
-        id: '1',
-        title: 'Schoko-Pudding Sonntag',
-        description: 'Let\'s meet at Alexanderplatz and share our favorite chocolate puddings! Bring your own spoon and fork!',
-        location: { lat: 52.520008, lng: 13.404954 },
-        city: 'Berlin',
-        startTime: '2025-10-06T15:00:00Z',
-        attendeeLimit: 15,
-        attendeeCount: 8,
-        organizer: {
-          name: 'Max Müller',
-          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face'
-        },
-        puddingPhotos: [
-          'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=100&h=100&fit=crop',
-          'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=100&h=100&fit=crop',
-          'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=100&h=100&fit=crop',
-        ]
-      },
-      {
-        id: '2',
-        title: 'Vanille Vibes',
-        description: 'Vanilla pudding lovers unite! We\'ll taste different vanilla varieties and share recipes.',
-        location: { lat: 48.1351, lng: 11.5820 },
-        city: 'Munich',
-        startTime: '2025-10-07T14:00:00Z',
-        attendeeLimit: 12,
-        attendeeCount: 5,
-        organizer: {
-          name: 'Lisa Schmidt',
-          avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face'
-        },
-        puddingPhotos: [
-          'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=100&h=100&fit=crop',
-          'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=100&h=100&fit=crop',
-        ]
-      },
-      {
-        id: '3',
-        title: 'Caramel Connect',
-        description: 'Sweet caramel pudding meetup in the heart of Frankfurt. Bring your favorite caramel treats!',
-        location: { lat: 50.1109, lng: 8.6821 },
-        city: 'Frankfurt',
-        startTime: '2025-10-08T16:00:00Z',
-        attendeeLimit: 20,
-        attendeeCount: 12,
-        organizer: {
-          name: 'Tom Weber',
-          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face'
-        },
-        puddingPhotos: [
-          'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=100&h=100&fit=crop',
-          'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=100&h=100&fit=crop',
-          'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=100&h=100&fit=crop',
-          'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=100&h=100&fit=crop',
-        ]
-      },
-    ];
+    const fetchEvents = async () => {
+      try {
+        setIsLoading(true);
+        const response = await eventsAPI.getEvents();
+        setEvents(response.data);
+      } catch (error: any) {
+        console.error('Failed to fetch events:', error);
+        // Silently fallback to mock data if API fails (backend may not be running)
+        const mockEvents: Event[] = [
+          {
+            id: '1',
+            title: 'Schoko-Pudding Sonntag',
+            description: 'Let\'s meet at Alexanderplatz and share our favorite chocolate puddings! Bring your own spoon and fork!',
+            location: { lat: 52.520008, lng: 13.404954 },
+            city: 'Berlin',
+            startTime: '2025-10-06T15:00:00Z',
+            attendeeLimit: 15,
+            attendeeCount: 8,
+            organizer: {
+              name: 'Max Müller',
+              avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face'
+            },
+            puddingPhotos: [
+              'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=100&h=100&fit=crop',
+              'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=100&h=100&fit=crop',
+              'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=100&h=100&fit=crop',
+            ]
+          },
+          {
+            id: '2',
+            title: 'Vanille Vibes',
+            description: 'Vanilla pudding lovers unite! We\'ll taste different vanilla varieties and share recipes.',
+            location: { lat: 48.1351, lng: 11.5820 },
+            city: 'Munich',
+            startTime: '2025-10-07T14:00:00Z',
+            attendeeLimit: 12,
+            attendeeCount: 5,
+            organizer: {
+              name: 'Lisa Schmidt',
+              avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face'
+            },
+            puddingPhotos: [
+              'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=100&h=100&fit=crop',
+              'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=100&h=100&fit=crop',
+            ]
+          },
+          {
+            id: '3',
+            title: 'Caramel Connect',
+            description: 'Sweet caramel pudding meetup in the heart of Frankfurt. Bring your favorite caramel treats!',
+            location: { lat: 50.1109, lng: 8.6821 },
+            city: 'Frankfurt',
+            startTime: '2025-10-08T16:00:00Z',
+            attendeeLimit: 20,
+            attendeeCount: 12,
+            organizer: {
+              name: 'Tom Weber',
+              avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face'
+            },
+            puddingPhotos: [
+              'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=100&h=100&fit=crop',
+              'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=100&h=100&fit=crop',
+              'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=100&h=100&fit=crop',
+            ]
+          }
+        ];
+        setEvents(mockEvents);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    // Simulate API call
-    setTimeout(() => {
-      setEvents(mockEvents);
-      setIsLoading(false);
-    }, 1000);
-  }, []);
+    fetchEvents();
+  }, [toast]);
 
   const handleJoinEvent = () => {
     setIsAuthModalOpen(true);

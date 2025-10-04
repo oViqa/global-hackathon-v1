@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuthStore } from '@/store/authStore';
 import { useToast } from '@/components/ui/use-toast';
+import { handleApiError } from '@/lib/api';
 
 interface LoginDialogProps {
   open: boolean;
@@ -45,9 +46,10 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
       setPassword('');
       setName('');
     } catch (error: any) {
+      const errorMessage = handleApiError(error);
       toast({
         title: 'Error',
-        description: error.response?.data?.error || 'Something went wrong',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Send, Image, Smile, MoreVertical, Users, Clock } from 'lucide-react';
+import { Send, Image as ImageIcon, Smile, MoreVertical, Users, Clock } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -229,7 +229,7 @@ export default function EventChat({ eventId, isOpen, onClose, event }: EventChat
               type="button"
               className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
             >
-              <Image className="w-5 h-5" />
+              <ImageIcon className="w-5 h-5" />
             </button>
             
             <button

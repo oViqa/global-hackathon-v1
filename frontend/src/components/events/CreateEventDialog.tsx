@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-import api from '@/lib/api';
+import api, { handleApiError } from '@/lib/api';
 
 interface CreateEventDialogProps {
   open: boolean;
@@ -58,9 +58,10 @@ export function CreateEventDialog({ open, onOpenChange }: CreateEventDialogProps
       onOpenChange(false);
       window.location.reload();
     } catch (error: any) {
+      const errorMessage = handleApiError(error);
       toast({
         title: 'Error',
-        description: error.response?.data?.error || 'Failed to create event',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
