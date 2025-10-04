@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const lexend = Lexend({ subsets: ['latin'], variable: '--font-lexend' })
 
 export const metadata: Metadata = {
-  title: 'Pudding Gabel - Find your pudding people',
+  title: 'Pudding mit Gabel - Find your pudding people',
   description: 'Connect with pudding enthusiasts and join meetups across Germany',
 }
 

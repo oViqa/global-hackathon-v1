@@ -177,7 +177,7 @@ const startServer = async () => {
     await connectToDatabase();
     
     // Start HTTP server
-    server.listen(PORT, HOST, () => {
+    server.listen(PORT, () => {
       console.log(`🚀 Server running on http://${HOST}:${PORT}`);
       console.log(`📊 Health check: http://${HOST}:${PORT}/health`);
       console.log(`🔌 Socket.IO server ready`);
