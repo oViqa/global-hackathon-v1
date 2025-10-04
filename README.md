@@ -116,4 +116,37 @@ Design sensibility, user experience, aesthetic choices. Is it intuitive? Does it
 
 ---
 
+## 🍮 Project: PuddingmitGabel
+
+This repository contains **PuddingmitGabel**, a full-stack e-commerce website for a premium pudding brand.
+
+### Tech Stack
+- **Frontend**: React 18, Vite, Tailwind CSS, React Router
+- **Backend**: Node.js, Express, SQLite3, CORS
+
+### Quick Start
+
+```bash
+cd PmitG
+npm run install:all
+npm run dev
+```
+
+Then open http://localhost:5173 in your browser!
+
+For detailed instructions, see [PmitG/SETUP_GUIDE.md](./PmitG/SETUP_GUIDE.md)
+
+### Screenshots
+
+**Homepage:**
+![Homepage](https://github.com/user-attachments/assets/7fd3958a-4aab-465a-8d10-d56b85976930)
+
+**Products Page:**
+![Products](https://github.com/user-attachments/assets/b557af9e-1d30-4aa5-bf5e-688c8d0202ff)
+
+**Shopping Cart:**
+![Cart](https://github.com/user-attachments/assets/b10f09e4-0e36-4118-be33-cd39142fdcaa)
+
+---
+
 **Good luck! 🎉**

@@ -56,26 +56,31 @@ function initDatabase() {
     )
   `);
 
-  // Insert sample products if table is empty
-  db.get('SELECT COUNT(*) as count FROM products', (err, row) => {
-    if (!err && row.count === 0) {
-      const sampleProducts = [
-        { name: 'Classic Vanilla Pudding', description: 'Rich and creamy vanilla pudding made with premium ingredients', price: 4.99, category: 'classic', image: '/images/vanilla.jpg' },
-        { name: 'Chocolate Dream', description: 'Decadent dark chocolate pudding for true chocolate lovers', price: 5.49, category: 'classic', image: '/images/chocolate.jpg' },
-        { name: 'Caramel Delight', description: 'Smooth caramel pudding with a hint of sea salt', price: 5.99, category: 'premium', image: '/images/caramel.jpg' },
-        { name: 'Berry Bliss', description: 'Fresh berry pudding with real fruit pieces', price: 6.49, category: 'premium', image: '/images/berry.jpg' },
-        { name: 'Matcha Magic', description: 'Japanese-inspired matcha green tea pudding', price: 6.99, category: 'signature', image: '/images/matcha.jpg' },
-        { name: 'Pistachio Paradise', description: 'Luxury pistachio pudding with real nuts', price: 7.49, category: 'signature', image: '/images/pistachio.jpg' }
-      ];
+  // Insert sample products if table is empty (with a small delay to ensure tables are created)
+  setTimeout(() => {
+    db.get('SELECT COUNT(*) as count FROM products', (err, row) => {
+      if (!err && row && row.count === 0) {
+        const sampleProducts = [
+          { name: 'Classic Vanilla Pudding', description: 'Rich and creamy vanilla pudding made with premium ingredients', price: 4.99, category: 'classic', image: '/images/vanilla.jpg' },
+          { name: 'Chocolate Dream', description: 'Decadent dark chocolate pudding for true chocolate lovers', price: 5.49, category: 'classic', image: '/images/chocolate.jpg' },
+          { name: 'Caramel Delight', description: 'Smooth caramel pudding with a hint of sea salt', price: 5.99, category: 'premium', image: '/images/caramel.jpg' },
+          { name: 'Berry Bliss', description: 'Fresh berry pudding with real fruit pieces', price: 6.49, category: 'premium', image: '/images/berry.jpg' },
+          { name: 'Matcha Magic', description: 'Japanese-inspired matcha green tea pudding', price: 6.99, category: 'signature', image: '/images/matcha.jpg' },
+          { name: 'Pistachio Paradise', description: 'Luxury pistachio pudding with real nuts', price: 7.49, category: 'signature', image: '/images/pistachio.jpg' }
+        ];
 
-      const stmt = db.prepare('INSERT INTO products (name, description, price, category, image) VALUES (?, ?, ?, ?, ?)');
-      sampleProducts.forEach(product => {
-        stmt.run(product.name, product.description, product.price, product.category, product.image);
-      });
-      stmt.finalize();
-      console.log('Sample products inserted');
-    }
-  });
+        const stmt = db.prepare('INSERT INTO products (name, description, price, category, image) VALUES (?, ?, ?, ?, ?)');
+        sampleProducts.forEach(product => {
+          stmt.run(product.name, product.description, product.price, product.category, product.image);
+        });
+        stmt.finalize(() => {
+          console.log('✓ Sample products inserted successfully');
+        });
+      } else if (row && row.count > 0) {
+        console.log('✓ Database already contains products');
+      }
+    });
+  }, 100);
 }
 
 // API Routes
