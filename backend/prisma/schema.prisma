@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  name          String
+  avatarUrl     String?   @map("avatar_url")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  
+  createdEvents Event[]   @relation("EventOrganizer")
+  attendances   Attendance[]
+  messages      Message[]
+  
+  @@map("users")
+}
+
+model Event {
+  id            String    @id @default(uuid())
+  title         String
+  description   String?
+  locationLat   Float     @map("location_lat")
+  locationLng   Float     @map("location_lng")
+  city          String
+  state         String
+  address       String?
+  startTime     DateTime  @map("start_time")
+  endTime       DateTime  @map("end_time")
+  attendeeLimit Int       @map("attendee_limit")
+  status        EventStatus @default(UPCOMING)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  organizerId   String    @map("organizer_id")
+  organizer     User      @relation("EventOrganizer", fields: [organizerId], references: [id])
+  
+  attendances   Attendance[]
+  messages      Message[]
+  
+  @@index([startTime])
+  @@index([locationLat, locationLng])
+  @@map("events")
+}
+
+enum EventStatus {
+  UPCOMING
+  ONGOING
+  ENDED
+  CANCELLED
+}
+
+model Attendance {
+  id            String    @id @default(uuid())
+  status        AttendanceStatus @default(PENDING)
+  puddingPhoto  String    @map("pudding_photo")
+  puddingName   String?   @map("pudding_name")
+  puddingDesc   String?   @map("pudding_desc")
+  joinedAt      DateTime  @default(now()) @map("joined_at")
+  approvedAt    DateTime? @map("approved_at")
+  
+  userId        String    @map("user_id")
+  user          User      @relation(fields: [userId], references: [id])
+  
+  eventId       String    @map("event_id")
+  event         Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, eventId])
+  @@map("attendances")
+}
+
+enum AttendanceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  LEFT
+}
+
+model Message {
+  id          String    @id @default(uuid())
+  content     String
+  imageUrl    String?   @map("image_url")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  
+  userId      String    @map("user_id")
+  user        User      @relation(fields: [userId], references: [id])
+  
+  eventId     String    @map("event_id")
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  @@index([eventId, createdAt])
+  @@map("messages")
+}
