@@ -1,0 +1,22 @@
+{
+  "name": "puddingmitgabel-website",
+  "version": "1.0.0",
+  "description": "Full stack website for PuddingmitGabel premium pudding brand",
+  "scripts": {
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm start",
+    "client": "cd client && npm run dev",
+    "build": "cd client && npm run build"
+  },
+  "keywords": [
+    "fullstack",
+    "pudding",
+    "ecommerce"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
