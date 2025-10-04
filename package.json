@@ -3,25 +3,20 @@
   "version": "1.0.0",
   "description": "PmitG - Pudding mit Gabel Meetup Platform Monorepo",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "npm run dev --workspace=@pmitg/backend",
-    "dev:frontend": "npm run dev --workspace=@pmitg/frontend",
-    "build": "npm run build --workspaces",
-    "build:backend": "npm run build --workspace=@pmitg/backend",
-    "build:frontend": "npm run build --workspace=@pmitg/frontend",
-    "install:all": "npm install && npm install --workspaces",
-    "clean": "npm run clean --workspaces",
-    "lint": "npm run lint --workspaces",
-    "type-check": "npm run type-check --workspaces"
+    "dev:backend": "cd apps/backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:backend": "cd apps/backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "install:all": "npm install && cd frontend && npm install && cd ../apps/backend && npm install",
+    "clean": "rm -rf frontend/.next apps/backend/dist",
+    "lint": "cd frontend && npm run lint",
+    "type-check": "cd frontend && npm run type-check"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
-    "typescript": "^5.3.3"
+    "concurrently": "^8.2.2"
   },
   "engines": {
     "node": ">=20.0.0",
@@ -29,7 +24,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/pmitg-monorepo.git"
+    "url": "git+https://github.com/oViqa/global-hackathon-v1.git"
   },
   "keywords": [
     "pudding",
@@ -38,6 +33,6 @@
     "location-based",
     "monorepo"
   ],
-  "author": "Your Name",
+  "author": "Viqa",
   "license": "MIT"
 }

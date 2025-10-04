@@ -1,32 +1,23 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import api from '@/lib/api';
-import { formatDate, formatTime, getTimeUntil } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import dynamic from 'next/dynamic';
 
-// Fix Leaflet default marker icon
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+// Dynamically import Leaflet components to avoid SSR issues
+const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), {
+  ssr: false,
 });
 
-// Custom pudding marker icon
-const puddingIcon = new L.Icon({
-  iconUrl: 'data:image/svg+xml;base64,' + btoa(`
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
-      <circle cx="12" cy="12" r="10" fill="#8b5cf6"/>
-      <text x="12" y="16" font-size="14" text-anchor="middle" fill="white">🍮</text>
-    </svg>
-  `),
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-  popupAnchor: [0, -32],
+const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), {
+  ssr: false,
+});
+
+const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), {
+  ssr: false,
+});
+
+const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), {
+  ssr: false,
 });
 
 interface Event {
@@ -35,105 +26,167 @@ interface Event {
   description?: string;
   location: { lat: number; lng: number };
   city: string;
-  state: string;
   startTime: string;
-  endTime: string;
   attendeeLimit: number;
   attendeeCount: number;
-  status: string;
-  organizer: {
-    id: string;
-    name: string;
-  };
-  puddingPreviews: string[];
 }
 
 export default function MapView() {
   const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+
+  // Germany center coordinates
+  const defaultCenter: [number, number] = [51.1657, 10.4515];
+  const defaultZoom = 6;
 
   useEffect(() => {
-    loadEvents();
+    // Mock data for now - will be replaced with API call
+    const mockEvents: Event[] = [
+      {
+        id: '1',
+        title: 'Schoko-Pudding Sonntag',
+        description: 'Let\'s meet at Alexanderplatz!',
+        location: { lat: 52.520008, lng: 13.404954 },
+        city: 'Berlin',
+        startTime: '2025-10-06T15:00:00Z',
+        attendeeLimit: 15,
+        attendeeCount: 8,
+      },
+      {
+        id: '2',
+        title: 'Vanille Vibes',
+        description: 'Vanilla pudding lovers unite!',
+        location: { lat: 48.1351, lng: 11.5820 },
+        city: 'Munich',
+        startTime: '2025-10-07T14:00:00Z',
+        attendeeLimit: 12,
+        attendeeCount: 5,
+      },
+      {
+        id: '3',
+        title: 'Caramel Connect',
+        description: 'Sweet caramel pudding meetup',
+        location: { lat: 50.1109, lng: 8.6821 },
+        city: 'Frankfurt',
+        startTime: '2025-10-08T16:00:00Z',
+        attendeeLimit: 20,
+        attendeeCount: 12,
+      },
+    ];
+
+    // Simulate API call
+    setTimeout(() => {
+      setEvents(mockEvents);
+      setIsLoading(false);
+    }, 1000);
   }, []);
 
-  const loadEvents = async () => {
-    try {
-      const response = await api.get('/events', {
-        params: {
-          status: 'UPCOMING',
-          limit: 50
-        }
-      });
-      setEvents(response.data.events);
-    } catch (error) {
-      console.error('Failed to load events:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="w-full h-full flex items-center justify-center">
+      <div className="h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-lg font-medium text-gray-600">Loading events...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading pudding events...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <MapContainer
-      center={[51.1657, 10.4515]} // Center of Germany
-      zoom={6}
-      style={{ width: '100%', height: '100%' }}
-      className="z-0"
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-
-      {events.map((event) => (
-        <Marker
-          key={event.id}
-          position={[event.location.lat, event.location.lng]}
-          icon={puddingIcon}
-        >
-          <Popup>
-            <div className="p-2 min-w-[250px]">
-              <h3 className="font-bold text-lg mb-2">{event.title}</h3>
-              <div className="space-y-1 text-sm">
-                <p className="text-gray-600">
-                  📅 {formatDate(event.startTime)} • {formatTime(event.startTime)}
-                </p>
-                <p className="text-gray-600">
-                  📍 {event.city}, {event.state}
-                </p>
-                <p className="text-gray-600">
-                  👥 {event.attendeeCount}/{event.attendeeLimit} joined
-                </p>
-                <p className="text-primary-600 font-semibold">
-                  ⏰ Starts in {getTimeUntil(event.startTime)}
-                </p>
-                <p className="text-gray-700 mt-2">
-                  Organized by {event.organizer.name}
-                </p>
+    <div className="relative h-screen">
+      <MapContainer
+        center={defaultCenter}
+        zoom={defaultZoom}
+        className="h-full w-full z-0"
+        style={{ height: '100vh', width: '100%' }}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        
+        {events.map((event) => (
+          <Marker
+            key={event.id}
+            position={[event.location.lat, event.location.lng]}
+            eventHandlers={{
+              click: () => setSelectedEvent(event),
+            }}
+          >
+            <Popup>
+              <div className="p-2 min-w-[200px]">
+                <h3 className="font-semibold text-lg text-gray-900 mb-1">
+                  {event.title}
+                </h3>
                 {event.description && (
-                  <p className="text-gray-600 mt-2 text-xs">
-                    {event.description.substring(0, 100)}
-                    {event.description.length > 100 && '...'}
+                  <p className="text-gray-600 text-sm mb-2">
+                    {event.description}
                   </p>
                 )}
+                <div className="space-y-1 text-xs text-gray-500">
+                  <p>📍 {event.city}</p>
+                  <p>📅 {new Date(event.startTime).toLocaleDateString()}</p>
+                  <p>👥 {event.attendeeCount}/{event.attendeeLimit}</p>
+                </div>
+                <button className="bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 w-full mt-3 text-sm">
+                  View Details
+                </button>
               </div>
-              <Button className="w-full mt-3" size="sm">
-                View Details
-              </Button>
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
+
+      {/* Floating Action Button */}
+      <button className="fixed bottom-6 right-6 bg-primary-500 hover:bg-primary-600 text-white p-4 rounded-full shadow-lg transition-all duration-200 hover:scale-105 z-10">
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
+
+      {/* Event Detail Modal */}
+      {selectedEvent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-xl font-bold text-gray-900">
+                  {selectedEvent.title}
+                </h2>
+                <button
+                  onClick={() => setSelectedEvent(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ×
+                </button>
+              </div>
+              
+              {selectedEvent.description && (
+                <p className="text-gray-600 mb-4">
+                  {selectedEvent.description}
+                </p>
+              )}
+              
+              <div className="space-y-2 text-sm text-gray-500 mb-6">
+                <p>📍 {selectedEvent.city}</p>
+                <p>📅 {new Date(selectedEvent.startTime).toLocaleDateString()}</p>
+                <p>🕐 {new Date(selectedEvent.startTime).toLocaleTimeString()}</p>
+                <p>👥 {selectedEvent.attendeeCount}/{selectedEvent.attendeeLimit} joined</p>
+              </div>
+              
+              <div className="space-y-3">
+                <button className="bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 w-full">
+                  Join Event 🍮
+                </button>
+                <button className="bg-secondary-500 hover:bg-secondary-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 w-full">
+                  Share Event
+                </button>
+              </div>
             </div>
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
